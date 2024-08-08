@@ -1,4 +1,4 @@
--- Drops the existing ComputeAverageScoreForUser stored procedure if it exists
+-- Drops the existing  and procedure if it exists
 DROP PROCEDURE IF EXISTS ComputeAverageScoreForUser;
 
 -- Defines a new delimiter for the stored procedure
