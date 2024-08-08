@@ -1,5 +1,4 @@
--- Creates a trigger that decreases the quantity
--- of an item after adding a new order.
+-- This trigger decreases the quantity of an item after a new order is added
 DROP TRIGGER IF EXISTS reduce_quantity;
 DELIMITER $$
 CREATE TRIGGER reduce_quantity
@@ -7,7 +6,7 @@ AFTER INSERT ON orders
 FOR EACH ROW
 BEGIN
     UPDATE items
-        SET quantity = quantity - NEW.number
-        WHERE name = NEW.item_name;
-END $$
+    SET quantity = quantity - (SELECT number FROM orders WHERE id = NEW.id)
+    WHERE name = (SELECT item_name FROM orders WHERE id = NEW.id);
+END$$
 DELIMITER ;
