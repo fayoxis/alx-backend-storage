@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
-"""
-Update school topics
-"""
-from pymongo.collection import Collection
-from typing import List
+''' Module for updating school topics in a MongoDB collection '''
 
-
-def modify_subject_areas(collection: Collection, institution: str, subject_areas: List[str])
--> pymongo.results.UpdateResult:
-    """
-    Update multiple documents with new subject areas.
+def update_topics(mongo_collection, name, topics):
+    '''
+    Updates the topics of a school document based on the school name.
 
     Args:
-        collection (Collection): MongoDB collection to operate on.
-        institution (str): Name of the institution to update.
-        subject_areas (List[str]): New list of subject areas to set.
+        mongo_collection: MongoDB collection object
+        name (str): Name of the school to update
+        topics (list): New list of topics to set for the school
 
     Returns:
-        pymongo.results.UpdateResult: Result of the update operation.
-    """
-    update_query = {"name": institution}
-    update_operation = {"$set": {"topics": subject_areas}}
-    
-    return collection.update_many(update_query, update_operation)
+        None
+    '''
+    if not mongo_collection:
+        return
+
+    try:
+        result = mongo_collection.update_many(
+            {"name": name},
+            {"$set": {"topics": topics}}
+        )
+        print(f"Modified {result.modified_count} document(s)")
+    except Exception as e:
+        print(f"An error occurred: {e}")
