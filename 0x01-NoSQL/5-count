@@ -1,3 +1,2 @@
 // Retrieves the count of documents in the 'school' collection
-const documentCount = await db.collection('school').countDocuments();
-console.log(documentCount);
+db.school.count()
