@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-''' Module for updating school topics in MongoDB '''
- import pymongo
+"""
+change school topic
+"""
+import pymongo
 
 
 def update_topics(mongo_collection, name, topics):
