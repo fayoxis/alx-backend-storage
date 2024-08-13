@@ -1,5 +1,12 @@
-// Adds a new attribute to documents in the school collection
+// Update all documents with "name" field equal to "Holberton school"
+// Set the "name" field to "Holberton school" and add an "address"
 db.school.updateMany(
-    { name: "Holberton school" },
-    { $set: { address: "972 Mission street" } }
+  { "name": "Holberton school" },
+  {
+    $set: {
+      "name": "Holberton school",
+      "address": "972 Mission street"
+    }
+  },
+  { multi: true }
 );
