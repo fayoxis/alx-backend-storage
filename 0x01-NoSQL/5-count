@@ -1,3 +1,3 @@
 // Retrieves the count of documents in the 'school' collection
-const documentCount = db.school.countDocuments();
-console.log(documentCount);
+const Count = db.school.count();
+console.log(document);
