@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 ''' Module for updating school topics in MongoDB '''
+ import pymongo
 
 
 def update_topics(mongo_collection, name, topics):
@@ -11,14 +12,8 @@ def update_topics(mongo_collection, name, topics):
         name (str): Name of the school
         topics (list): New list of topics to set
     '''
-    if not mongo_collection:
-        return
-    
-    try:
-        result = mongo_collection.update_many(
-            {"name": name},
-            {"$set": {"topics": topics}}
-        )
-        print(f"Modified {result.modified_count} document(s)")
-    except Exception as e:
-        print(f"Error updating topics: {e}")
+
+    return mongo_collection.update_many(
+        {"name": name},
+        {"$set": {"topics": topics}}
+    )
