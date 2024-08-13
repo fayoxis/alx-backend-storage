@@ -13,14 +13,10 @@ def update_topics(mongo_collection, name, topics):
     Returns:
         None
     '''
-    if not mongo_collection:
+if mongo_collection is None:
         return
-
+    
     try:
-        result = mongo_collection.update_many(
-            {"name": name},
-            {"$set": {"topics": topics}}
-        )
-        print(f"Modified {result.modified_count} document(s)")
+        mongo_collection.update_many({"name": name}, {"$set": {"topics": topics}})
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print("An error occurred:", str(e))
