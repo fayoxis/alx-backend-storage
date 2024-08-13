@@ -1,6 +1,6 @@
 // Update all documents with "name" field equal to "Holberton school"
 // Set the "name" field to "Holberton school" and add an "address"
-db.school.updateMany(
+db.school.update(
   { "name": "Holberton school" },
   {
     $set: {
