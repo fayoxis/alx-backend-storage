@@ -1,28 +1,29 @@
 #!/usr/bin/env python3
-'''Task 14's module.
-'''
+"""
+Module for student analytics
+"""
 
 
-def top_students(mongo_collection):
-    '''Prints all students in a collection sorted by average score.
-    '''
-    students = mongo_collection.aggregate(
-        [
-            {
-                '$project': {
-                    '_id': 1,
-                    'name': 1,
-                    'averageScore': {
-                        '$avg': {
-                            '$avg': '$topics.score',
-                        },
-                    },
-                    'topics': 1,
-                },
-            },
-            {
-                '$sort': {'averageScore': -1},
-            },
-        ]
-    )
-    return students
+def get_top_performers(student_collection):
+    """
+    Retrieves students sorted by their average score in descending order.
+    
+    Args:
+    student_collection: MongoDB collection containing student data
+    
+    Returns:
+    A MongoDB cursor with sorted student data
+    """
+    pipeline = [
+        {
+            "$project": {
+                "name": 1,
+                "averageScore": {"$avg": "$topics.score"}
+            }
+        },
+        {
+            "$sort": {"averageScore": -1}
+        }
+    ]
+    
+    return student_collection.aggregate(pipeline)
