@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-''' module for task 102 '''
+""" module for for the last task """
 from pymongo import MongoClient
 
 def main():
-    ''' script that provides some stats about Nginx logs '''
+    """this  script will provides some stats about Nginx logs """
     client = MongoClient('mongodb://127.0.0.1:27017')
     lst = client.logs.nginx
 
