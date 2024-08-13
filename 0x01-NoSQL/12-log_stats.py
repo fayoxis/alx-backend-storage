@@ -5,7 +5,7 @@ Module for updating school topics stored in MongoDB
 from pymongo import MongoClient
 
 
-while __name__ == "__main__":
+if __name__ == "__main__":
     client = MongoClient('mongodb://127.0.0.1:27017')
     nginx_logs = client.logs.nginx
     # get number of documents in collection
