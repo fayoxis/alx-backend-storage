@@ -1,16 +1,26 @@
 #!/usr/bin/env python3
-'''Task 11's module.
-'''
+''' Module for updating school topics in a MongoDB collection '''
 
-
-def schools_by_topic(mongo_collection, topic):
-    '''Returns the list of school having a specific topic.
+def update_topics(mongo_collection, name, topics):
     '''
-    topic_filter = {
-        'topics': {
-            '$elemMatch': {
-                '$eq': topic,
-            },
-        },
-    }
-    return [doc for doc in mongo_collection.find(topic_filter)]
+    Updates the topics of a school document based on the school name.
+
+    Args:
+        mongo_collection: MongoDB collection object
+        name (str): Name of the school to update
+        topics (list): New list of topics to set for the school
+
+    Returns:
+        None
+    '''
+    if not mongo_collection:
+        return
+
+    try:
+        result = mongo_collection.update_many(
+            {"name": name},
+            {"$set": {"topics": topics}}
+        )
+        print(f"Modified {result.modified_count} document(s)")
+    except Exception as e:
+        print(f"An error occurred: {e}")
