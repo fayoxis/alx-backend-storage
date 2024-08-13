@@ -27,5 +27,5 @@ def run():
     print_nginx_request_logs(client.logs.nginx)
 
 
-while __name__ == '__main__':
+if __name__ == '__main__':
     run()
