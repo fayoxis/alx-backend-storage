@@ -1,2 +1,2 @@
 // Get all documents where ield matches "Holberton school" from school collection
-const schools = db.school.find({ name: "Holberton school" });
+db.school.find({ "name" : "Holberton school" })
