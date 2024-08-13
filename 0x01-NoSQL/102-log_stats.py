@@ -1,54 +1,40 @@
 #!/usr/bin/env python3
-'''Task 15's module.
-'''
+''' module for task 102 '''
 from pymongo import MongoClient
 
-
-def print_nginx_request_logs(nginx_collection):
-    '''Prints stats about Nginx request logs.
-    '''
-    print('{} logs'.format(nginx_collection.count_documents({})))
-    print('Methods:')
-    methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
-    for method in methods:
-        req_count = len(list(nginx_collection.find({'method': method})))
-        print('\tmethod {}: {}'.format(method, req_count))
-    status_checks_count = len(list(
-        nginx_collection.find({'method': 'GET', 'path': '/status'})
-    ))
-    print('{} status check'.format(status_checks_count))
-
-
-def print_top_ips(server_collection):
-    '''Prints statistics about the top 10 HTTP IPs in a collection.
-    '''
-    print('IPs:')
-    request_logs = server_collection.aggregate(
-        [
-            {
-                '$group': {'_id': "$ip", 'totalRequests': {'$sum': 1}}
-            },
-            {
-                '$sort': {'totalRequests': -1}
-            },
-            {
-                '$limit': 10
-            },
-        ]
-    )
-    for request_log in request_logs:
-        ip = request_log['_id']
-        ip_requests_count = request_log['totalRequests']
-        print('\t{}: {}'.format(ip, ip_requests_count))
-
-
-def run():
-    '''Provides some stats about Nginx logs stored in MongoDB.
-    '''
+def main():
+    ''' script that provides some stats about Nginx logs '''
     client = MongoClient('mongodb://127.0.0.1:27017')
-    print_nginx_request_logs(client.logs.nginx)
-    print_top_ips(client.logs.nginx)
+    lst = client.logs.nginx
 
+    print("{} logs".format(lst.estimated_document_count()))
+    print("Methods:")
 
-if __name__ == '__main__':
-    run()
+    methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    i = 0
+    while True:
+        if i >= len(methods):
+            break
+        method = methods[i]
+        print("\tmethod {}: {}".format(method, lst.count_documents({'method': method})))
+        i += 1
+
+    print("{} status check".format(lst.count_documents({'method': 'GET', 'path': "/status"})))
+
+    print("IPs:")
+    pipeline = [
+        {"$group": {"_id": "$ip", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+
+    top_ips = list(lst.aggregate(pipeline))
+
+    i = 0
+    while i < len(top_ips):
+        ip_info = top_ips[i]
+        print("\t{}: {}".format(ip_info["_id"], ip_info["count"]))
+        i += 1
+
+if __name__ == "__main__":
+    main()
