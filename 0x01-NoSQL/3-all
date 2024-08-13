@@ -1,2 +1,3 @@
-// Lists all documents in the school collection.
-db.school.find().forEach(printjson);
+// Retrieves all documents from the collection&iterates over them
+const schoolDocs = db.school.find();
+schoolDocs.forEach(doc => printjson(doc));
