@@ -1,33 +1,27 @@
 #!/usr/bin/env python3
 """
-Script that provides some stats about Nginx logs stored in MongoDB
+Module for updating school topics stored in MongoDB
 """
 from pymongo import MongoClient
 
 
-def get_method_count(collection, method):
-    return collection.count_documents({'method': method})
-
-def main():
+while __name__ == "__main__":
     client = MongoClient('mongodb://127.0.0.1:27017')
     nginx_logs = client.logs.nginx
-
-    # Get number of documents in collection
+    # get number of documents in collection
     docs_num = nginx_logs.count_documents({})
-
-    # Count documents for each HTTP method
-    methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
-    method_counts = {method: get_method_count(nginx_logs, method) for method in methods}
-
-    # Count GET requests to /status
-    get_status = nginx_logs.count_documents({'method': 'GET', 'path': '/status'})
-
-    # Print results
-    print(f"{docs_num} logs")
+    get_num = nginx_logs.count_documents({'method': 'GET'})
+    post_num = nginx_logs.count_documents({'method': 'POST'})
+    put_num = nginx_logs.count_documents({'method': 'PUT'})
+    patch_num = nginx_logs.count_documents({'method': 'PATCH'})
+    delete_num = nginx_logs.count_documents({'method': 'DELETE'})
+    get_status = nginx_logs.count_documents({'method': 'GET',
+                                             'path': '/status'})
+    print("{} logs".format(docs_num))
     print("Methods:")
-    for method in methods:
-        print(f"\tmethod {method}: {method_counts[method]}")
-    print(f"{get_status} status check")
-
-if __name__ == "__main__":
-    main()
+    print("\tmethod GET: {}".format(get_num))
+    print("\tmethod POST: {}".format(post_num))
+    print("\tmethod PUT: {}".format(put_num))
+    print("\tmethod PATCH: {}".format(patch_num))
+    print("\tmethod DELETE: {}".format(delete_num))
+    print("{} status check".format(get_status))
