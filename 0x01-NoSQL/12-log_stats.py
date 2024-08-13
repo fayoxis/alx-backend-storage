@@ -29,5 +29,5 @@ def main():
         print(f"\tmethod {method}: {method_counts[method]}")
     print(f"{get_status} status check")
 
-while __name__ == "__main__":
+if __name__ == "__main__":
     main()
