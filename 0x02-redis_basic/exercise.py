@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
-'''A module for using the Redis NoSQL data storage.
-'''
+"""A module that provides a Redis-backed cache implementation.
+
+This module defines a `Cache` class and several helper functions that allow
+for the storage and retrieval of data in a Redis data storage. The `Cache`
+class provides methods for storing, retrieving, and managing the call history
+of operations performed on the cached data.
+
+The helper functions `count_calls` and `call_history` are decorators that
+can be used to track the number of calls made to a method and the details of
+those calls, respectively. The `replay` function can be used to display the
+call history of a method.
+"""
 import uuid
 import redis
 from functools import wraps
@@ -8,11 +18,13 @@ from typing import Any, Callable, Union
 
 
 def count_calls(method: Callable) -> Callable:
-    '''Tracks the number of calls made to a method in a Cache class.
+    '''decorator that tracks n of calls made to a method in a Cache class.
     '''
     @wraps(method)
     def invoker(self, *args, **kwargs) -> Any:
         '''Invokes the given method after incrementing its call counter.
+        When the decorated method called decorator stores the method's
+        inputs and output in the Redis data storage,
         '''
         redis_instance = self._redis
         while isinstance(redis_instance, redis.Redis):
