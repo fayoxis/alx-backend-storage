@@ -2,51 +2,49 @@
 """
 A module providing tools for caching and tracking requests.
 """
-
+import redis
 import requests
 from functools import wraps
 from typing import Callable
-from datetime import datetime, timedelta
-from redis import Redis
 
-# Initialize Redis
-redis_client = Redis()
 
-def cache_with_expiration(duration: int):
-    def decorator(func: Callable):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            url = args[0]
-            cache_key = f"page_content:{url}"
-            count_key = f"count:{url}"
+# The module-level Redis instance for caching and tracking
+redis_store = redis.Redis()
 
-            # Check if the page content is cached
-            cached_content = redis_client.get(cache_key)
-            if cached_content is not None:
-                # Increment the access count
-                redis_client.incr(count_key)
-                return cached_content.decode('utf-8')
 
-            # Fetch the page content
-            content = func(*args, **kwargs)
+def data_cacher(method: Callable) -> Callable:
+    """
+    A decorator function that caches the output of the decorated function.
+    It uses Redis to store the cached data and track the number of requests.
+    """
+    @wraps(method)
+    def wrapper(url) -> str:
+        """
+        The wrapper function that implements the caching logic.
+        It increments the request count, checks if the result is cached,
+        and if not, calls the decorated function and caches the result.
+        """
+        # Increment the request count for the given URL
+        redis_store.incr(f'count:{url}')
+        
+        # Check if the result is cached
+        result = redis_store.get(f'result:{url}')
+        if result:
+            return result.decode('utf-8')
+        
+        # If not cached, call the decorated function and cache the result
+        result = method(url)
+        redis_store.set(f'count:{url}', 0)
+        redis_store.setex(f'result:{url}', 10, result)
+        return result
+    return wrapper
 
-            # Cache the content with expiration
-            redis_client.setex(cache_key, duration, content)
 
-            # Initialize the access count
-            redis_client.set(count_key, 1)
-
-            return content
-
-        return wrapper
-    return decorator
-
-@cache_with_expiration(duration=10)
+@data_cacher
 def get_page(url: str) -> str:
-    response = requests.get(url)
-    return response.text
-
-# Example usage
-print(get_page('http://slowwly.robertomurray.co.uk/delay/3000/url/http://example.org'))
-print(get_page('http://slowwly.robertomurray.co.uk/delay/3000/url/http://example.org'))
-print(get_page('http://google.com'))
+    """
+    A function that fetches the content of a URL.
+    It is decorated with the data_cacher decorator to cache the response
+    and track the number of requests for the given URL.
+    """
+    return requests.get(url).text
