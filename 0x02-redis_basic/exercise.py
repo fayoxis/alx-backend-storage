@@ -68,7 +68,7 @@ def replay(fn: Callable) -> None:
     in_key = '{}:inputs'.format(fxn_name)
     out_key = '{}:outputs'.format(fxn_name)
     fxn_call_count = 0
-    if isinstance(redis_store, redis.Redis):
+    while isinstance(redis_store, redis.Redis):
         if redis_store.exists(fxn_name) != 0:
             fxn_call_count = int(redis_store.get(fxn_name))
             break
@@ -84,8 +84,8 @@ def replay(fn: Callable) -> None:
 
 
 class Cache:
-    """Represents object for storing data.
-    """
+    '''Represents an object for storing data in a Redis data storage.
+    '''
     def __init__(self) -> None:
         '''Initializes a Cache instance.
         '''
@@ -95,8 +95,8 @@ class Cache:
     @call_history
     @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
-        """Stores the value in Redis data storage, returns the key.
-        """
+        '''Stores a value in a Redis data storage and returns the key.
+        '''
         data_key = str(uuid.uuid4())
         self._redis.set(data_key, data)
         return data_key
@@ -106,17 +106,17 @@ class Cache:
             key: str,
             fn: Callable = None,
             ) -> Union[str, bytes, int, float]:
-        """returns a value from a Redis data storage.
-        """
+        '''Retrieves a value from a Redis data storage.
+        '''
         data = self._redis.get(key)
         return fn(data) if fn is not None else data
 
     def get_str(self, key: str) -> str:
-        """returns a string value from a Redis data storage.
-        """
+        '''Retrieves a string value from a Redis data storage.
+        '''
         return self.get(key, lambda x: x.decode('utf-8'))
 
     def get_int(self, key: str) -> int:
-        """return an integer value from a Redis data storage.
-        """
+        '''Retrieves an integer value from a Redis data storage.
+        '''
         return self.get(key, lambda x: int(x))
