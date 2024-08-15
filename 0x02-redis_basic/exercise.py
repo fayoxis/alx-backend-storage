@@ -56,15 +56,17 @@ def replay(fn: Callable) -> None:
     fxn_inputs = redis_store.lrange(in_key, 0, -1)
     fxn_outputs = redis_store.lrange(out_key, 0, -1)
     i = 0
-    do_continue = True
-    while do_continue:
-        try:
-            fxn_input = fxn_inputs[i].decode("utf-8")
-            fxn_output = fxn_outputs[i]
-            print('{}(*{}) -> {}'.format(fxn_name, fxn_input, fxn_output))
+    do_again = True
+    while do_again:
+        if i < len(fxn_inputs):
+            print('{}(*{}) -> {}'.format(
+                fxn_name,
+                fxn_inputs[i].decode("utf-8"),
+                fxn_outputs[i],
+            ))
             i += 1
-        except IndexError:
-            do_continue = False
+        else:
+            do_again = False
 
 
 class Cache:
