@@ -1,38 +1,58 @@
 #!/usr/bin/env python3
 '''A module with tools for request caching and tracking.
 '''
-import redis
 import requests
-from functools import wraps
+import functools
+from datetime import datetime, timedelta
 from typing import Callable
 
+# Cache dictionary
+cache = {}
 
-redis_store = redis.Redis()
-'''The module-level Redis instance.
-'''
+# Decorator function to cache and track page requests
+def cache_and_track(func: Callable) -> Callable:
+    @functools.wraps(func)
+    def wrapper(url: str) -> str:
+        # Check if the URL is in the cache
+        if url in cache:
+            cached_data, expiration_time, count = cache[url]
+            # Check if the cached data has expired
+            if datetime.now() < expiration_time:
+                # Update the access count
+                cache[url] = (cached_data, expiration_time, count + 1)
+                return cached_data
 
+        # Fetch the page content
+        content = func(url)
 
-def data_cacher(method: Callable) -> Callable:
-    '''Caches the output of fetched data.
-    '''
-    @wraps(method)
-    def invoker(url) -> str:
-        '''The wrapper function for caching the output.
-        '''
-        redis_store.incr(f'count:{url}')
-        result = redis_store.get(f'result:{url}')
-        if result:
-            return result.decode('utf-8')
-        result = method(url)
-        redis_store.set(f'count:{url}', 0)
-        redis_store.setex(f'result:{url}', 10, result)
-        return result
-    return invoker
+        # Update the cache and access count
+        cache[url] = (content, datetime.now() + timedelta(seconds=10), 1)
+        cache[f"count:{url}"] = 1
 
+        return content
 
-@data_cacher
+    return wrapper
+
+@cache_and_track
 def get_page(url: str) -> str:
-    '''Returns the content of a URL after caching the request's response,
-    and tracking the request.
-    '''
-    return requests.get(url).text
+    """
+    Fetches the HTML content of a URL and caches the result for 10 seconds.
+    Also tracks the number of times the URL was accessed.
+    """
+    response = requests.get(url)
+    return response.text
+
+# Example usage
+url = "http://slowwly.robertomurray.co.uk/delay/3000/url/http://www.example.com"
+print(get_page(url))  # First request, fetch and cache the content
+print(cache[f"count:{url}"])  # Print the access count (1)
+
+print(get_page(url))  # Second request, retrieve from cache
+print(cache[f"count:{url}"])  # Print the access count (2)
+
+# Wait for more than 10 seconds to expire the cache
+import time
+time.sleep(11)
+
+print(get_page(url))  # Third request, fetch and cache the content again
+print(cache[f"count:{url}"])  # Print the access count (3)
