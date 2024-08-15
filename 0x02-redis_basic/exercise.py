@@ -28,6 +28,8 @@ def call_history(method: Callable) -> Callable:
     A decorator that tracks the call details of a method in a Cache class.
     '''
     @wraps(method)
+
+    
     def invoker(self, *args, **kwargs) -> Any:
         '''
         Returns the method's output after storing its inputs and output.
@@ -73,6 +75,8 @@ class Cache:
     '''
     A class that represents an object for storing data in a Redis data storage.
     '''
+
+    
     def __init__(self) -> None:
         '''
         Initializes a Cache instance.
@@ -82,6 +86,8 @@ class Cache:
 
     @call_history
     @count_calls
+
+    
     def store(self, data: Union[str, bytes, int, float]) -> str:
         '''
         Stores a value in a Redis data storage and returns the key.
