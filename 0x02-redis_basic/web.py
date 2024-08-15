@@ -1,58 +1,47 @@
-#!/usr/bin/env python3
-'''A module with tools for request caching and tracking.
-'''
 import requests
-import functools
-from datetime import datetime, timedelta
+from functools import wraps
 from typing import Callable
+from datetime import datetime, timedelta
+from redis import Redis
 
-# Cache dictionary
-cache = {}
+# Initialize Redis
+redis_client = Redis()
 
-# Decorator function to cache and track page requests
-def cache_and_track(func: Callable) -> Callable:
-    @functools.wraps(func)
-    def wrapper(url: str) -> str:
-        # Check if the URL is in the cache
-        if url in cache:
-            cached_data, expiration_time, count = cache[url]
-            # Check if the cached data has expired
-            if datetime.now() < expiration_time:
-                # Update the access count
-                cache[url] = (cached_data, expiration_time, count + 1)
-                return cached_data
+def cache_with_expiration(duration: int):
+    def decorator(func: Callable):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            url = args[0]
+            cache_key = f"page_content:{url}"
+            count_key = f"count:{url}"
 
-        # Fetch the page content
-        content = func(url)
+            # Check if the page content is cached
+            cached_content = redis_client.get(cache_key)
+            if cached_content is not None:
+                # Increment the access count
+                redis_client.incr(count_key)
+                return cached_content.decode('utf-8')
 
-        # Update the cache and access count
-        cache[url] = (content, datetime.now() + timedelta(seconds=10), 1)
-        cache[f"count:{url}"] = 1
+            # Fetch the page content
+            content = func(*args, **kwargs)
 
-        return content
+            # Cache the content with expiration
+            redis_client.setex(cache_key, duration, content)
 
-    return wrapper
+            # Initialize the access count
+            redis_client.set(count_key, 1)
 
-@cache_and_track
+            return content
+
+        return wrapper
+    return decorator
+
+@cache_with_expiration(duration=10)
 def get_page(url: str) -> str:
-    """
-    Fetches the HTML content of a URL and caches the result for 10 seconds.
-    Also tracks the number of times the URL was accessed.
-    """
     response = requests.get(url)
     return response.text
 
 # Example usage
-url = "http://slowwly.robertomurray.co.uk/delay/3000/url/http://www.example.com"
-print(get_page(url))  # First request, fetch and cache the content
-print(cache[f"count:{url}"])  # Print the access count (1)
-
-print(get_page(url))  # Second request, retrieve from cache
-print(cache[f"count:{url}"])  # Print the access count (2)
-
-# Wait for more than 10 seconds to expire the cache
-import time
-time.sleep(11)
-
-print(get_page(url))  # Third request, fetch and cache the content again
-print(cache[f"count:{url}"])  # Print the access count (3)
+print(get_page('http://slowwly.robertomurray.co.uk/delay/3000/url/http://example.org'))
+print(get_page('http://slowwly.robertomurray.co.uk/delay/3000/url/http://example.org'))
+print(get_page('http://google.com'))
