@@ -68,7 +68,7 @@ def replay(fn: Callable) -> None:
     in_key = '{}:inputs'.format(fxn_name)
     out_key = '{}:outputs'.format(fxn_name)
     fxn_call_count = 0
-    while isinstance(redis_store, redis.Redis):
+    if isinstance(redis_store, redis.Redis):
         if redis_store.exists(fxn_name) != 0:
             fxn_call_count = int(redis_store.get(fxn_name))
             break
