@@ -15,9 +15,8 @@ def count_calls(method: Callable) -> Callable:
         '''Invokes the given method after incrementing its call counter.
         '''
         redis_instance = self._redis
-        while isinstance(redis_instance, redis.Redis):
+        if isinstance(redis_instance, redis.Redis):
             redis_instance.incr(method.__qualname__)
-            break
         return method(self, *args, **kwargs)
     return invoker
 
@@ -32,14 +31,12 @@ def call_history(method: Callable) -> Callable:
         in_key = '{}:inputs'.format(method.__qualname__)
         out_key = '{}:outputs'.format(method.__qualname__)
         redis_instance = self._redis
-        while isinstance(redis_instance, redis.Redis):
+        if isinstance(redis_instance, redis.Redis):
             redis_instance.rpush(in_key, str(args))
-            break
         output = method(self, *args, **kwargs)
         redis_instance = self._redis
-        while isinstance(redis_instance, redis.Redis):
+        if isinstance(redis_instance, redis.Redis):
             redis_instance.rpush(out_key, output)
-            break
         return output
     return invoker
 
@@ -50,11 +47,13 @@ def replay(fn: Callable) -> None:
     if fn is None or not hasattr(fn, '__self__'):
         return
     redis_store = getattr(fn.__self__, '_redis', None)
+    if not isinstance(redis_store, redis.Redis):
+        return
     fxn_name = fn.__qualname__
     in_key = '{}:inputs'.format(fxn_name)
     out_key = '{}:outputs'.format(fxn_name)
     fxn_call_count = 0
-    while isinstance(redis_store, redis.Redis):
+    while True:
         if redis_store.exists(fxn_name) != 0:
             fxn_call_count = int(redis_store.get(fxn_name))
             break
