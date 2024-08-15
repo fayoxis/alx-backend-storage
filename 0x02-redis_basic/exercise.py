@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
-"""A module that provides a Redis-backed cache implementation.
-
-This module defines a `Cache` class and several helper functions that allow
-for the storage and retrieval of data in a Redis data storage. The `Cache`
-class provides methods for storing, retrieving, and managing the call history
-of operations performed on the cached data.
-
-The helper functions `count_calls` and `call_history` are decorators that
-can be used to track the number of calls made to a method and the details of
-those calls, respectively. The `replay` function can be used to display the
-call history of a method.
-"""
+'''A module for using the Redis NoSQL data storage.
+'''
 import uuid
 import redis
 from functools import wraps
@@ -18,16 +8,14 @@ from typing import Any, Callable, Union
 
 
 def count_calls(method: Callable) -> Callable:
-    """decorator that tracks n of calls made to a method in a Cache class.
-    """
+    '''Tracks the number of calls made to a method in a Cache class.
+    '''
     @wraps(method)
     def invoker(self, *args, **kwargs) -> Any:
-        """Invokes the given method after incrementing its call counter.
-        When the decorated method called decorator stores the method's
-        inputs and output in the Redis data storage,
-        """
+        '''Invokes the given method after incrementing its call counter.
+        '''
         redis_instance = self._redis
-        if isinstance(redis_instance, redis.Redis):
+        while isinstance(redis_instance, redis.Redis):
             redis_instance.incr(method.__qualname__)
             break
         return method(self, *args, **kwargs)
@@ -35,14 +23,12 @@ def count_calls(method: Callable) -> Callable:
 
 
 def call_history(method: Callable) -> Callable:
-    """Displays the call history of a Cache class' method.
-       This function retrieves the call count and i/o-put values
-       for the specified meth from Redis data storage, and print
-    """
+    '''Tracks the call details of a method in a Cache class.
+    '''
     @wraps(method)
     def invoker(self, *args, **kwargs) -> Any:
-        """Returns the method's output after storing product
-        """
+        '''Returns the method's output after storing its inputs and output.
+        '''
         in_key = '{}:inputs'.format(method.__qualname__)
         out_key = '{}:outputs'.format(method.__qualname__)
         redis_instance = self._redis
@@ -59,8 +45,8 @@ def call_history(method: Callable) -> Callable:
 
 
 def replay(fn: Callable) -> None:
-    """this will definitely Displays call history of Cache method.
-    """
+    '''Displays the call history of a Cache class' method.
+    '''
     if fn is None or not hasattr(fn, '__self__'):
         return
     redis_store = getattr(fn.__self__, '_redis', None)
