@@ -1,34 +1,24 @@
 #!/usr/bin/env python3
-""" expiring web cache module """
-
+'''A module with tools for request caching and tracking.
+'''
 import redis
 import requests
-from typing import Callable
-from functools import wraps
-
-redis = redis.Redis()
+from datetime import timedelta
 
 
-def wrap_requests(fn: Callable) -> Callable:
-    """ Decorator wrapper """
-
-    @wraps(fn)
-    def wrapper(url):
-        """ Wrapper for decorator guy """
-        redis.incr(f"count:{url}")
-        cached_response = redis.get(f"cached:{url}")
-        if cached_response:
-            return cached_response.decode('utf-8')
-        result = fn(url)
-        redis.setex(f"cached:{url}", 10, result)
-        return result
-
-    return wrapper
-
-
-@wrap_requests
 def get_page(url: str) -> str:
-    """get page self descriptive
-    """
-    response = requests.get(url)
-    return response.text
+    '''Returns the content of a URL after caching the request's response,
+    and tracking the request.
+    '''
+    if url is None or len(url.strip()) == 0:
+        return ''
+    redis_store = redis.Redis()
+    res_key = 'result:{}'.format(url)
+    req_key = 'count:{}'.format(url)
+    result = redis_store.get(res_key)
+    if result is not None:
+        redis_store.incr(req_key)
+        return result
+    result = requests.get(url).content.decode('utf-8')
+    redis_store.setex(res_key, timedelta(seconds=10), result)
+    return result
