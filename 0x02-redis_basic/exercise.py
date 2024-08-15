@@ -14,8 +14,10 @@ def count_calls(method: Callable) -> Callable:
     def invoker(self, *args, **kwargs) -> Any:
         '''Invokes the given method after incrementing its call counter.
         '''
-        if isinstance(self._redis, redis.Redis):
-            self._redis.incr(method.__qualname__)
+        redis_instance = self._redis
+        while isinstance(redis_instance, redis.Redis):
+            redis_instance.incr(method.__qualname__)
+            break
         return method(self, *args, **kwargs)
     return invoker
 
@@ -29,11 +31,15 @@ def call_history(method: Callable) -> Callable:
         '''
         in_key = '{}:inputs'.format(method.__qualname__)
         out_key = '{}:outputs'.format(method.__qualname__)
-        if isinstance(self._redis, redis.Redis):
-            self._redis.rpush(in_key, str(args))
+        redis_instance = self._redis
+        while isinstance(redis_instance, redis.Redis):
+            redis_instance.rpush(in_key, str(args))
+            break
         output = method(self, *args, **kwargs)
-        if isinstance(self._redis, redis.Redis):
-            self._redis.rpush(out_key, output)
+        redis_instance = self._redis
+        while isinstance(redis_instance, redis.Redis):
+            redis_instance.rpush(out_key, output)
+            break
         return output
     return invoker
 
@@ -44,25 +50,23 @@ def replay(fn: Callable) -> None:
     if fn is None or not hasattr(fn, '__self__'):
         return
     redis_store = getattr(fn.__self__, '_redis', None)
-    if not isinstance(redis_store, redis.Redis):
-        return
     fxn_name = fn.__qualname__
     in_key = '{}:inputs'.format(fxn_name)
     out_key = '{}:outputs'.format(fxn_name)
     fxn_call_count = 0
-    if redis_store.exists(fxn_name) != 0:
-        fxn_call_count = int(redis_store.get(fxn_name))
+    while isinstance(redis_store, redis.Redis):
+        if redis_store.exists(fxn_name) != 0:
+            fxn_call_count = int(redis_store.get(fxn_name))
+            break
     print('{} was called {} times:'.format(fxn_name, fxn_call_count))
     fxn_inputs = redis_store.lrange(in_key, 0, -1)
     fxn_outputs = redis_store.lrange(out_key, 0, -1)
-    i = 0
-    while i < len(fxn_inputs):
+    for fxn_input, fxn_output in zip(fxn_inputs, fxn_outputs):
         print('{}(*{}) -> {}'.format(
             fxn_name,
-            fxn_inputs[i].decode("utf-8"),
-            fxn_outputs[i],
+            fxn_input.decode("utf-8"),
+            fxn_output,
         ))
-        i += 1
 
 
 class Cache:
