@@ -24,10 +24,10 @@ def call_history(method: Callable) -> Callable:
         """Stores inputs, executes the method, and stores the output."""
         in_key = f"{method.__qualname__}:inputs"
         out_key = f"{method.__qualname__}:outputs"
-        while isinstance(self._redis, redis.Redis):
+        if isinstance(self._redis, redis.Redis):
             self._redis.rpush(in_key, str(args))
         output = method(self, *args, **kwargs)
-        while isinstance(self._redis, redis.Redis):
+        if isinstance(self._redis, redis.Redis):
             self._redis.rpush(out_key, output)
         return output
     return wrapper
