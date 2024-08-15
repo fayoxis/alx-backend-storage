@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
-'''A module for using the Redis NoSQL data storage.
-'''
+"""
+A module that provides a Redis-backed cache implementation.
+
+This module defines a `Cache` class and several helper functions that allow
+for the storage and retrieval of data in a Redis data storage. The `Cache`
+class provides methods for storing, retrieving, and managing the call history
+of operations performed on the cached data.
+
+The helper functions `count_calls` and `call_history` are decorators that
+can be used to track the number of calls made to a method and the details of
+those calls, respectively. The `replay` function can be used to display the
+call history of a method.
+"""
 import uuid
 import redis
 from functools import wraps
@@ -8,12 +19,24 @@ from typing import Any, Callable, Union
 
 
 def count_calls(method: Callable) -> Callable:
-    '''Tracks the number of calls made to a method in a Cache class.
-    '''
+    """
+    A decorator that tracks the number of calls made to a method in a Cache class.
+
+    When the decorated method is called, the decorator increments a counter
+    in the Redis data storage, using the method's qualified name as the key.
+    The decorated method is then invoked and its return value is returned.
+
+    Args:
+        method (Callable): The method to be decorated.
+
+    Returns:
+        Callable: The decorated method.
+    """
     @wraps(method)
     def invoker(self, *args, **kwargs) -> Any:
-        '''Invokes the given method after incrementing its call counter.
-        '''
+        """
+        Invokes the given method after incrementing its call counter.
+        """
         if isinstance(self._redis, redis.Redis):
             self._redis.incr(method.__qualname__)
         return method(self, *args, **kwargs)
@@ -21,12 +44,25 @@ def count_calls(method: Callable) -> Callable:
 
 
 def call_history(method: Callable) -> Callable:
-    '''Tracks the call details of a method in a Cache class.
-    '''
+    """
+    A decorator that tracks the call details of a method in a Cache class.
+
+    When the decorated method is called, the decorator stores the method's
+    inputs and output in the Redis data storage, using the method's qualified
+    name as the key prefix. The decorated method is then invoked and its
+    return value is returned.
+
+    Args:
+        method (Callable): The method to be decorated.
+
+    Returns:
+        Callable: The decorated method.
+    """
     @wraps(method)
     def invoker(self, *args, **kwargs) -> Any:
-        '''Returns the method's output after storing its inputs and output.
-        '''
+        """
+        Returns the method's output after storing its inputs and output.
+        """
         in_key = '{}:inputs'.format(method.__qualname__)
         out_key = '{}:outputs'.format(method.__qualname__)
         if isinstance(self._redis, redis.Redis):
@@ -39,8 +75,16 @@ def call_history(method: Callable) -> Callable:
 
 
 def replay(fn: Callable) -> None:
-    '''Displays the call history of a Cache class' method.
-    '''
+    """
+    Displays the call history of a Cache class' method.
+
+    This function retrieves the call count and the input and output values
+    for the specified method from the Redis data storage, and prints the
+    information to the console.
+
+    Args:
+        fn (Callable): The method to display the call history for.
+    """
     if fn is None or not hasattr(fn, '__self__'):
         return
     redis_store = getattr(fn.__self__, '_redis', None)
@@ -64,19 +108,39 @@ def replay(fn: Callable) -> None:
 
 
 class Cache:
-    '''Represents an object for storing data in a Redis data storage.
-    '''
+    """
+    A class that represents an object for storing data in a Redis data storage.
+
+    This class provides methods for storing, retrieving, and managing the call
+    history of operations performed on the cached data. The `store` method
+    stores a value in the Redis data storage and returns a unique key. The
+    `get` method retrieves a value from the Redis data storage, optionally
+    applying a transformation function to the retrieved data. The `get_str`
+    and `get_int` methods are convenience wrappers around `get` that
+    automatically decode the retrieved value as a string or convert it to an
+    integer, respectively.
+    """
     def __init__(self) -> None:
-        '''Initializes a Cache instance.
-        '''
+        """
+        Initializes a Cache instance.
+
+        This method creates a new Redis connection and flushes the database.
+        """
         self._redis = redis.Redis()
         self._redis.flushdb(True)
 
     @call_history
     @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
-        '''Stores a value in a Redis data storage and returns the key.
-        '''
+        """
+        Stores a value in a Redis data storage and returns the key.
+
+        Args:
+            data (Union[str, bytes, int, float]): The data to be stored.
+
+        Returns:
+            str: The unique key under which the data is stored.
+        """
         data_key = str(uuid.uuid4())
         self._redis.set(data_key, data)
         return data_key
@@ -86,17 +150,41 @@ class Cache:
             key: str,
             fn: Callable = None,
             ) -> Union[str, bytes, int, float]:
-        '''Retrieves a value from a Redis data storage.
-        '''
+        """
+        Retrieves a value from a Redis data storage.
+
+        Args:
+            key (str): The key under which the data is stored.
+            fn (Callable, optional): A transformation function to apply to the
+                retrieved data.
+
+        Returns:
+            Union[str, bytes, int, float]: The retrieved data, optionally
+                transformed by the provided function.
+        """
         data = self._redis.get(key)
         return fn(data) if fn is not None else data
 
     def get_str(self, key: str) -> str:
-        '''Retrieves a string value from a Redis data storage.
-        '''
+        """
+        Retrieves a string value from a Redis data storage.
+
+        Args:
+            key (str): The key under which the data is stored.
+
+        Returns:
+            str: The retrieved data, decoded as a string.
+        """
         return self.get(key, lambda x: x.decode('utf-8'))
 
     def get_int(self, key: str) -> int:
-        '''Retrieves an integer value from a Redis data storage.
-        '''
+        """
+        Retrieves an integer value from a Redis data storage.
+
+        Args:
+            key (str): The key under which the data is stored.
+
+        Returns:
+            int: The retrieved data, converted to an integer.
+        """
         return self.get(key, lambda x: int(x))
