@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+A module providing tools for caching and tracking requests.
+"""
+
 import requests
 from functools import wraps
 from typing import Callable
