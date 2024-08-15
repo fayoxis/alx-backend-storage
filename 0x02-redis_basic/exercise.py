@@ -27,7 +27,7 @@ def count_calls(method: Callable) -> Callable:
         inputs and output in the Redis data storage,
         """
         redis_instance = self._redis
-        while isinstance(redis_instance, redis.Redis):
+        if isinstance(redis_instance, redis.Redis):
             redis_instance.incr(method.__qualname__)
             break
         return method(self, *args, **kwargs)
