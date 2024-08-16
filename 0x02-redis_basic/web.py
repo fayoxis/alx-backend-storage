@@ -1,37 +1,34 @@
-#!/usr/bin/env python3
-"""module that has tools for request caching $ tracking.
-"""
-import redis
 import requests
 from functools import wraps
 from typing import Callable
+from cachetools import TTLCache
 
+cache = TTLCache(maxsize=100, ttl=10)
 
-redis_store = redis.Redis()
-""" module-level instance.
-"""
+def cache_with_count(func: Callable) -> Callable:
+    @wraps(func)
+    def wrapper(url: str) -> str:
+        count_key = f"count:{url}"
+        cached_result = cache.get(url)
 
+        if cached_result:
+            cache[count_key] = cache.get(count_key, 0) + 1
+            return cached_result
 
-def data_cacher(method: Callable) -> Callable:
-    """this is the Caches the output of fetched data.
-    """
-    @wraps(method)
-    def invoker(url) -> str:
-        """ wrapper function for caching output.
-        """
-        redis_store.incr(f'count:{url}')
-        result = redis_store.get(f'result:{url}')
-        if result:
-            return result.decode('utf-8')
-        result = method(url)
-        redis_store.set(f'count:{url}', 0)
-        redis_store.setex(f'result:{url}', 10, result)
+        result = func(url)
+        cache[url] = result
+        cache[count_key] = cache.get(count_key, 0) + 1
+
         return result
-    return invoker
 
+    return wrapper
 
-@data_cacher
+@cache_with_count
 def get_page(url: str) -> str:
-    """Returns the content of a URL after caching the request
-    """
-    return requests.get(url).text
+    response = requests.get(url)
+    return response.text
+
+# Example usage
+url = "https://slowwly.robertomurray.co.uk/delay/3000/url/https://www.example.com"
+print(get_page(url))
+print(f"Count for {url}: {cache[f'count:{url}']}")
